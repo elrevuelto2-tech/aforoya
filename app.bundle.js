@@ -4,7 +4,6 @@
    ============================================================ */
 
 // ── Firebase config ─────────────────────────────────────────
-// Replace with your Firebase project credentials
 const firebaseConfig = {
   apiKey: "AIzaSyD1WjUHAR5v1EK8WPlvC_DpqnMj77tgYzU",
   authDomain: "aforoya-f2e04.firebaseapp.com",
@@ -271,12 +270,12 @@ function viewHome() {
       </div>
       <div class="home-cards">
         <div class="home-card card-verde" onclick="location.href='?view=dueno'">
-          <span class="hc-icon">🏠</span>
-          <span class="hc-label">Soy el Dueño</span>
+          <span class="hc-icon">⚙️</span>
+          <span class="hc-label">Admin</span>
         </div>
         <div class="home-card card-azul" onclick="viewPorteroBuscar()">
-          <span class="hc-icon">🚪</span>
-          <span class="hc-label">Soy Portero</span>
+          <span class="hc-icon">🎛️</span>
+          <span class="hc-label">Control</span>
         </div>
       </div>
       <p class="home-hint">¿Cliente? Escanea el QR de la entrada del local</p>
@@ -322,17 +321,17 @@ async function viewClienteEntrada(localId) {
 
   mount(`
     <div class="cliente-screen entrada-screen">
-      <div class="cliente-icon">✅</div>
+      <div class="cliente-icon-wrap">✅</div>
       <h1 class="cliente-title">¡Bienvenido!</h1>
       <h2 class="cliente-venue">${local.nombre || 'Bar'}</h2>
-      <div class="aforo-badge verde">
+      <div class="aforo-badge">
         <span class="aforo-num">${Math.min(local.aforoActual + 1, local.aforoMaximo)}</span>
         <span class="aforo-sep">/</span>
         <span class="aforo-max">${local.aforoMaximo}</span>
         <span class="aforo-label">personas dentro</span>
       </div>
       <div class="progress-wrap">
-        <div class="progress-bar" style="width:${pct}%;background:var(--verde)"></div>
+        <div class="progress-bar" style="width:${pct}%"></div>
       </div>
       <p class="cliente-hint">Escanea el <strong>QR de salida</strong><br>al marcharte y llévate tu sorpresa 🎁</p>
     </div>
@@ -358,7 +357,7 @@ async function viewClienteSalida(localId) {
   if (!token) {
     mount(`
       <div class="cliente-screen salida-screen">
-        <div class="cliente-icon">👋</div>
+        <div class="cliente-icon-wrap salida">👋</div>
         <h1 class="cliente-title">¡Hasta pronto!</h1>
         <h2 class="cliente-venue">${local.nombre || 'Bar'}</h2>
         <p class="cliente-hint">No se detectó entrada previa en este dispositivo.</p>
@@ -420,7 +419,7 @@ async function viewClienteSalida(localId) {
 
   mount(`
     <div class="cliente-screen salida-screen">
-      <div class="cliente-icon">👋</div>
+      <div class="cliente-icon-wrap salida">👋</div>
       <h1 class="cliente-title">¡Hasta pronto!</h1>
       <h2 class="cliente-venue">${local.nombre || 'Bar'}</h2>
       ${incentivoHTML}
@@ -466,7 +465,7 @@ async function viewCupon(cuponToken) {
 window.viewPorteroBuscar = function() {
   mount(`
     <div class="pin-screen">
-      <div class="pin-logo">🚪</div>
+      <div class="pin-logo">🎛️</div>
       <h2 class="pin-title">Acceso Portero</h2>
       <div class="form-group" style="width:100%;max-width:280px">
         <label>Nombre del local</label>
@@ -505,9 +504,15 @@ function viewPorteroPIN(localId) {
 
   mount(`
     <div class="pin-screen">
-      <div class="pin-logo">🚪</div>
+      <div class="pin-logo">🎛️</div>
       <h2 class="pin-title">Acceso Portero</h2>
-      <div class="pin-display" id="pin-display">_ _ _ _</div>
+      <p class="pin-subtitle">Introduce tu PIN de 4 dígitos</p>
+      <div class="pin-display" id="pin-display">
+        <div class="pin-dot" id="dot-0"></div>
+        <div class="pin-dot" id="dot-1"></div>
+        <div class="pin-dot" id="dot-2"></div>
+        <div class="pin-dot" id="dot-3"></div>
+      </div>
       <p class="pin-error" id="pin-error"></p>
       <div class="numpad">
         ${[1,2,3,4,5,6,7,8,9,'','0','⌫'].map(k => `
@@ -518,8 +523,9 @@ function viewPorteroPIN(localId) {
   `);
 
   function renderDisplay() {
-    const dots = Array.from({ length: 4 }, (_, i) => input[i] ? '●' : '○').join(' ');
-    document.getElementById('pin-display').textContent = dots;
+    for (let i = 0; i < 4; i++) {
+      document.getElementById(`dot-${i}`).classList.toggle('active', i < input.length);
+    }
   }
 
   document.querySelectorAll('.numpad-btn').forEach(btn => {
@@ -576,19 +582,27 @@ function viewPorteroOps(localId) {
   mount(`
     <div class="portero-screen">
       <div class="portero-header">
-        <span class="portero-venue" id="p-venue">Cargando…</span>
+        <div class="portero-venue-chip">
+          <div class="venue-dot"></div>
+          <span id="p-venue">Cargando…</span>
+        </div>
         <button class="btn-icon" onclick="sessionStorage.removeItem('aforoya_portero_${localId}');location.reload()">🔒</button>
       </div>
-      <div class="aforo-display" id="p-aforo">
-        <span class="aforo-current" id="p-current">—</span>
-        <span class="aforo-slash">/</span>
-        <span class="aforo-maximo" id="p-max">—</span>
+      <div class="aforo-display">
+        <div class="aforo-numbers">
+          <span class="aforo-current" id="p-current">—</span>
+          <span class="aforo-slash">/</span>
+          <span class="aforo-maximo" id="p-max">—</span>
+        </div>
+        <div class="aforo-label-txt">personas dentro</div>
+        <div class="progress-wrap big" style="width:100%">
+          <div class="progress-bar" id="p-bar" style="width:0%"></div>
+        </div>
+        <div class="pct-row">
+          <span>Ocupación</span>
+          <span class="pct-label" id="p-pct">0%</span>
+        </div>
       </div>
-      <div class="aforo-label-txt">personas dentro</div>
-      <div class="progress-wrap big">
-        <div class="progress-bar" id="p-bar" style="width:0%"></div>
-      </div>
-      <div class="pct-label" id="p-pct">0%</div>
       <div class="portero-buttons">
         <button class="btn-op btn-entrada" id="btn-entrada" onclick="porteroAccion('${localId}','entrada')">
           <span>✅</span><span>ENTRADA</span>
