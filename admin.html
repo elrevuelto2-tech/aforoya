@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>AforoYa — SuperAdmin</title>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0a; --bg-card: #141414; --bg-surface: #1c1c1e; --bg-input: #222228;
+      --verde: #00ff88; --verde-dim: rgba(0,255,136,0.12);
+      --rojo: #ff3355; --rojo-dim: rgba(255,51,85,0.12);
+      --amarillo: #ffcc00; --azul: #4488ff; --azul-dim: rgba(68,136,255,0.12);
+      --texto: #f0f0f0; --texto-dim: #888; --border: rgba(255,255,255,0.08);
+      --radius: 16px; --radius-sm: 10px;
+      --shadow-verde: 0 0 32px rgba(0,255,136,0.2);
+    }
+    html, body {
+      min-height: 100%; background: var(--bg); color: var(--texto);
+      font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    #app { min-height: 100vh; }
+
+    /* Utility */
+    .hidden { display: none !important; }
+    .mt-1 { margin-top: 0.5rem; } .mt-2 { margin-top: 1rem; }
+    .verde { color: var(--verde); } .rojo { color: var(--rojo); }
+    .amarillo { color: var(--amarillo); } .azul { color: var(--azul); }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      padding: 0.7rem 1.4rem; border: none; border-radius: var(--radius-sm);
+      font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-full { width: 100%; }
+    .btn-verde { background: var(--verde); color: #000; }
+    .btn-verde:hover { box-shadow: var(--shadow-verde); }
+    .btn-rojo { background: var(--rojo); color: #fff; }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--texto-dim); }
+    .btn-ghost:hover { border-color: var(--texto-dim); color: var(--texto); }
+    .btn-icon {
+      background: transparent; border: none; cursor: pointer;
+      font-size: 1.3rem; padding: 0.4rem; color: var(--texto-dim); border-radius: var(--radius-sm);
+    }
+
+    /* Forms */
+    .form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
+    .form-group label { font-size: 0.8rem; color: var(--texto-dim); font-weight: 500; }
+    .inp {
+      background: var(--bg-input); border: 1px solid var(--border);
+      color: var(--texto); border-radius: var(--radius-sm);
+      padding: 0.7rem 1rem; font-size: 0.95rem; outline: none; transition: border-color 0.15s;
+    }
+    .inp:focus { border-color: var(--verde); box-shadow: 0 0 0 3px var(--verde-dim); }
+
+    /* Card */
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.25rem;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(2rem);
+      padding: 0.7rem 1.4rem; border-radius: 100px; font-size: 0.85rem; font-weight: 600;
+      z-index: 9999; opacity: 0; transition: all 0.25s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.success { background: var(--verde); color: #000; }
+    .toast.error { background: var(--rojo); color: #fff; }
+
+    /* Modal */
+    #modal-ov {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 8888; padding: 1.5rem; opacity: 0; transition: opacity 0.2s;
+    }
+    #modal-ov.open { opacity: 1; }
+    .modal-box {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.75rem; width: 100%; max-width: 380px;
+    }
+    .modal-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem; }
+    .modal-msg { color: var(--texto-dim); margin-bottom: 1.5rem; }
+    .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
+
+    /* Auth */
+    .auth-wrap {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 2rem;
+    }
+    .auth-logo { font-size: 3rem; margin-bottom: 0.5rem; }
+    .auth-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem; }
+    .auth-sub { color: var(--texto-dim); font-size: 0.9rem; margin-bottom: 2rem; }
+    .auth-form { width: 100%; max-width: 360px; }
+    .auth-error { color: var(--rojo); font-size: 0.85rem; min-height: 1.2em; margin-bottom: 0.75rem; }
+
+    /* Admin shell */
+    .admin-shell { display: flex; flex-direction: column; min-height: 100vh; }
+    .admin-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem 1.5rem; background: var(--bg-card);
+      border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10;
+    }
+    .admin-logo { display: flex; align-items: center; gap: 0.5rem; }
+    .admin-logo span { font-size: 1.4rem; }
+    .admin-title { font-size: 1rem; font-weight: 700; }
+    .admin-badge {
+      background: var(--azul-dim); color: var(--azul);
+      border: 1px solid var(--azul); border-radius: 100px;
+      padding: 0.2rem 0.6rem; font-size: 0.7rem; font-weight: 700;
+    }
+    .admin-body { flex: 1; padding: 1.5rem; max-width: 900px; margin: 0 auto; width: 100%; }
+
+    /* Stats bar */
+    .global-stats {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.75rem; margin-bottom: 1.75rem;
+    }
+    .gs-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 1rem; text-align: center;
+    }
+    .gs-num { font-size: 2rem; font-weight: 800; }
+    .gs-label { font-size: 0.75rem; color: var(--texto-dim); margin-top: 0.2rem; }
+
+    /* Locales list */
+    .section-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1rem;
+    }
+    .section-title { font-size: 1rem; font-weight: 700; }
+    .locales-grid { display: flex; flex-direction: column; gap: 0.75rem; }
+    .local-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.25rem;
+      display: grid; grid-template-columns: 1fr auto; gap: 0.75rem; align-items: start;
+    }
+    .local-card:hover { border-color: rgba(255,255,255,0.15); }
+    .local-name { font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .local-id { font-family: monospace; font-size: 0.7rem; color: var(--texto-dim); margin-bottom: 0.5rem; }
+    .local-aforo {
+      display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;
+    }
+    .progress-mini {
+      flex: 1; height: 6px; background: var(--bg-surface); border-radius: 100px; overflow: hidden;
+    }
+    .progress-mini-bar { height: 100%; border-radius: 100px; transition: width 0.3s; }
+    .local-pct { font-size: 0.8rem; font-weight: 700; min-width: 36px; text-align: right; }
+    .local-meta { font-size: 0.75rem; color: var(--texto-dim); }
+    .status-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px;
+    }
+    .dot-verde { background: var(--verde); box-shadow: 0 0 6px var(--verde); }
+    .dot-amarillo { background: var(--amarillo); }
+    .dot-rojo { background: var(--rojo); box-shadow: 0 0 6px var(--rojo); }
+    .dot-gris { background: var(--texto-dim); }
+    .local-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+
+    /* New local form */
+    .new-local-form {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem; margin-top: 1.5rem;
+    }
+    .new-local-title { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; }
+
+    /* Loading */
+    .loading-wrap {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; gap: 1rem; color: var(--texto-dim);
+    }
+    .spinner {
+      width: 36px; height: 36px; border: 3px solid var(--bg-surface);
+      border-top-color: var(--verde); border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="loading-wrap"><div class="spinner"></div></div>
+</div>
+
+<script>
+  // ── Firebase config (same as app.bundle.js) ──────────────────
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const auth = firebase.auth();
+
+  // ── Utils ─────────────────────────────────────────────────────
+  function showToast(msg, type = 'success') {
+    const existing = document.getElementById('sa-toast');
+    if (existing) existing.remove();
+    const t = document.createElement('div');
+    t.id = 'sa-toast'; t.className = `toast ${type}`;
+    t.textContent = msg; document.body.appendChild(t);
+    requestAnimationFrame(() => t.classList.add('show'));
+    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3000);
+  }
+
+  function showModal(title, msg, onConfirm, btnText = 'Confirmar') {
+    let ov = document.getElementById('modal-ov');
+    if (ov) ov.remove();
+    ov = document.createElement('div'); ov.id = 'modal-ov';
+    ov.innerHTML = `
+      <div class="modal-box">
+        <p class="modal-title">${title}</p>
+        <p class="modal-msg">${msg}</p>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="mc">Cancelar</button>
+          <button class="btn btn-rojo" id="mok">${btnText}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(ov);
+    requestAnimationFrame(() => ov.classList.add('open'));
+    ov.querySelector('#mc').onclick = () => ov.remove();
+    ov.querySelector('#mok').onclick = () => { ov.remove(); onConfirm(); };
+  }
+
+  function pctColor(pct) {
+    if (pct >= 100) return 'var(--rojo)';
+    if (pct >= 80) return 'var(--amarillo)';
+    return 'var(--verde)';
+  }
+  function dotClass(pct) {
+    if (pct >= 100) return 'dot-rojo';
+    if (pct >= 80) return 'dot-amarillo';
+    if (pct > 0) return 'dot-verde';
+    return 'dot-gris';
+  }
+
+  // ── Auth ──────────────────────────────────────────────────────
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      // Verify superadmin role
+      db.ref(`users/${user.uid}`).once('value').then(snap => {
+        const data = snap.val();
+        if (data && data.rol === 'superadmin') {
+          renderAdmin(user);
+        } else {
+          renderNotAllowed();
+        }
+      });
+    } else {
+      renderAuth();
+    }
+  });
+
+  function renderAuth() {
+    document.getElementById('app').innerHTML = `
+      <div class="auth-wrap">
+        <div class="auth-logo">🔐</div>
+        <h1 class="auth-title">SuperAdmin</h1>
+        <p class="auth-sub">AforoYa — Panel de control</p>
+        <form id="af" class="auth-form">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="ae" class="inp" placeholder="admin@aforoya.es" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label>Contraseña</label>
+            <input type="password" id="ap" class="inp" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+          <p class="auth-error" id="aerr"></p>
+          <button type="submit" class="btn btn-verde btn-full">Entrar</button>
+        </form>
+      </div>`;
+    document.getElementById('af').onsubmit = async e => {
+      e.preventDefault();
+      const email = document.getElementById('ae').value;
+      const pass = document.getElementById('ap').value;
+      try {
+        await auth.signInWithEmailAndPassword(email, pass);
+      } catch (_) {
+        document.getElementById('aerr').textContent = 'Credenciales incorrectas';
+      }
+    };
+  }
+
+  function renderNotAllowed() {
+    document.getElementById('app').innerHTML = `
+      <div class="loading-wrap" style="flex-direction:column; gap:1rem">
+        <div style="font-size:3rem">⛔</div>
+        <p>No tienes permisos de SuperAdmin.</p>
+        <button class="btn btn-ghost" onclick="firebase.auth().signOut()">Cerrar sesión</button>
+      </div>`;
+  }
+
+  function renderAdmin(user) {
+    document.getElementById('app').innerHTML = `
+      <div class="admin-shell">
+        <header class="admin-header">
+          <div class="admin-logo">
+            <span>🏛️</span>
+            <span class="admin-title">AforoYa</span>
+            <span class="admin-badge">SUPERADMIN</span>
+          </div>
+          <button class="btn-icon" onclick="firebase.auth().signOut()" title="Cerrar sesión">🚪</button>
+        </header>
+        <main class="admin-body">
+          <div class="global-stats" id="global-stats">
+            <div class="gs-card"><div class="gs-num azul" id="gs-locales">—</div><div class="gs-label">Locales activos</div></div>
+            <div class="gs-card"><div class="gs-num verde" id="gs-dentro">—</div><div class="gs-label">Personas dentro</div></div>
+            <div class="gs-card"><div class="gs-num amarillo" id="gs-cap">—</div><div class="gs-label">Capacidad total</div></div>
+            <div class="gs-card"><div class="gs-num" id="gs-pct">—</div><div class="gs-label">Ocupación media</div></div>
+          </div>
+          <div class="section-header">
+            <h2 class="section-title">Todos los locales</h2>
+            <button class="btn btn-verde" onclick="toggleNewForm()">+ Nuevo local</button>
+          </div>
+          <div id="locales-list" class="locales-grid">
+            <div class="loading-wrap" style="min-height:120px"><div class="spinner"></div></div>
+          </div>
+          <div id="new-form" class="hidden new-local-form">
+            <p class="new-local-title">➕ Dar de alta nuevo local</p>
+            <div class="form-group">
+              <label>Nombre del local</label>
+              <input type="text" id="nf-nombre" class="inp" placeholder="Bar Paco">
+            </div>
+            <div class="form-group">
+              <label>Aforo máximo</label>
+              <input type="number" id="nf-maximo" class="inp" value="100" min="1">
+            </div>
+            <div class="form-group">
+              <label>PIN portero (4 dígitos)</label>
+              <input type="text" id="nf-pin" class="inp" maxlength="4" placeholder="1234">
+            </div>
+            <div class="form-group">
+              <label>Email del dueño (opcional)</label>
+              <input type="email" id="nf-email" class="inp" placeholder="dueno@bar.com">
+            </div>
+            <div style="display:flex; gap:0.75rem; margin-top:0.5rem">
+              <button class="btn btn-verde" onclick="crearLocal()">Crear local</button>
+              <button class="btn btn-ghost" onclick="toggleNewForm()">Cancelar</button>
+            </div>
+          </div>
+        </main>
+      </div>`;
+
+    // Real-time listener on all locales
+    db.ref('locales').on('value', snap => {
+      const locales = snap.val() || {};
+      renderLocales(locales);
+      updateGlobalStats(locales);
+    });
+  }
+
+  function updateGlobalStats(locales) {
+    const entries = Object.values(locales);
+    const total = entries.length;
+    const dentro = entries.reduce((s, l) => s + (l.aforoActual || 0), 0);
+    const cap = entries.reduce((s, l) => s + (l.aforoMaximo || 0), 0);
+    const pct = cap > 0 ? Math.round((dentro / cap) * 100) : 0;
+
+    document.getElementById('gs-locales').textContent = total;
+    document.getElementById('gs-dentro').textContent = dentro;
+    document.getElementById('gs-cap').textContent = cap;
+    const pctEl = document.getElementById('gs-pct');
+    pctEl.textContent = `${pct}%`;
+    pctEl.className = `gs-num ${pct >= 80 ? 'rojo' : pct >= 60 ? 'amarillo' : 'verde'}`;
+  }
+
+  function renderLocales(locales) {
+    const list = document.getElementById('locales-list');
+    if (!list) return;
+    const entries = Object.entries(locales);
+
+    if (!entries.length) {
+      list.innerHTML = `<p style="color:var(--texto-dim); text-align:center; padding:2rem">No hay locales dados de alta aún.</p>`;
+      return;
+    }
+
+    list.innerHTML = entries.map(([id, l]) => {
+      const actual = l.aforoActual || 0;
+      const maximo = l.aforoMaximo || 100;
+      const pct = Math.round((actual / maximo) * 100);
+      const color = pctColor(pct);
+      const dot = dotClass(pct);
+      return `
+        <div class="local-card">
+          <div>
+            <div class="local-name">${l.nombre || '—'}</div>
+            <div class="local-id">ID: ${id}</div>
+            <div class="local-aforo">
+              <span style="font-size:0.85rem; font-weight:700; color:${color}">${actual}/${maximo}</span>
+              <div class="progress-mini">
+                <div class="progress-mini-bar" style="width:${pct}%; background:${color}"></div>
+              </div>
+              <span class="local-pct" style="color:${color}">${pct}%</span>
+            </div>
+            <div class="local-meta">
+              PIN: ${l.pinPortero || '—'} &nbsp;·&nbsp;
+              Incentivo: ${l.incentivo || 'ninguno'} &nbsp;·&nbsp;
+              Cierre: ${l.config?.horarioCierre || '—'}
+            </div>
+            <div class="local-actions">
+              <a href="/index.html?local=${id}&view=dueno" target="_blank" class="btn btn-ghost" style="font-size:0.75rem; padding:0.4rem 0.75rem">Panel dueño ↗</a>
+              <button class="btn btn-ghost" style="font-size:0.75rem; padding:0.4rem 0.75rem" onclick="resetLocal('${id}','${l.nombre}')">Reset aforo</button>
+              <button class="btn btn-ghost" style="font-size:0.75rem; padding:0.4rem 0.75rem; color:var(--rojo); border-color:var(--rojo)" onclick="eliminarLocal('${id}','${l.nombre}')">Eliminar</button>
+            </div>
+          </div>
+          <div class="status-dot ${dot}"></div>
+        </div>`;
+    }).join('');
+  }
+
+  window.toggleNewForm = function() {
+    const f = document.getElementById('new-form');
+    f.classList.toggle('hidden');
+  };
+
+  window.crearLocal = async function() {
+    const nombre = document.getElementById('nf-nombre').value.trim();
+    const maximo = parseInt(document.getElementById('nf-maximo').value);
+    const pin = document.getElementById('nf-pin').value;
+    if (!nombre) { showToast('Introduce el nombre del local', 'error'); return; }
+    if (!/^\d{4}$/.test(pin)) { showToast('El PIN debe tener 4 dígitos', 'error'); return; }
+
+    const ref = db.ref('locales').push();
+    await ref.set({
+      nombre, aforoMaximo: maximo, aforoActual: 0,
+      pinPortero: pin, incentivo: 'descuento', descuentoPorcentaje: 10,
+      config: { horarioCierre: '06:00', resetAutomatico: true },
+      sesionActual: {
+        fecha: new Date().toISOString().slice(0, 10),
+        entradas: {}, cupones: {},
+        sorteo: { participaciones: {}, ganador: null }
+      }
+    });
+    showToast(`Local "${nombre}" creado con ID: ${ref.key}`, 'success');
+    document.getElementById('new-form').classList.add('hidden');
+    ['nf-nombre', 'nf-pin', 'nf-email'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    document.getElementById('nf-maximo').value = '100';
+  };
+
+  window.resetLocal = function(id, nombre) {
+    showModal('Reset aforo', `¿Poner el aforo de "${nombre}" a 0?`, async () => {
+      await db.ref(`locales/${id}/aforoActual`).set(0);
+      showToast('Aforo reseteado', 'success');
+    });
+  };
+
+  window.eliminarLocal = function(id, nombre) {
+    showModal('Eliminar local', `¿Eliminar permanentemente "${nombre}"? Esta acción no se puede deshacer.`, async () => {
+      await db.ref(`locales/${id}`).remove();
+      showToast(`Local "${nombre}" eliminado`, 'success');
+    }, 'Eliminar');
+  };
+</script>
+</body>
+</html>
