@@ -6,8 +6,8 @@
   "background_color": "#0a0a0a",
   "display": "standalone",
   "orientation": "portrait",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "icons": [
     {
       "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%230a0a0a'/><text y='130' x='20' font-size='120' font-family='system-ui'>🏛️</text></svg>",

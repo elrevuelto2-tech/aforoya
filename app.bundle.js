@@ -6,13 +6,13 @@
 // ── Firebase config ─────────────────────────────────────────
 // Replace with your Firebase project credentials
 const firebaseConfig = {
-  apiKey: "AIzaSyD1WjUHAR5v1EK8WPlvC_DpqnMj77tgYzU",
-  authDomain: "aforoya-f2e04.firebaseapp.com",
-  databaseURL: "https://aforoya-f2e04-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "aforoya-f2e04",
-  storageBucket: "aforoya-f2e04.firebasestorage.app",
-  messagingSenderId: "952335530782",
-  appId: "1:952335530782:web:12b2f72e91d468b580670f"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 // ── Firebase init ────────────────────────────────────────────
@@ -249,7 +249,7 @@ async function router() {
 
   // Register SW
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 
   if (local && tipo === 'entrada') return viewClienteEntrada(local);
