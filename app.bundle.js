@@ -6,13 +6,13 @@
 // ── Firebase config ─────────────────────────────────────────
 // Replace with your Firebase project credentials
 const firebaseConfig = {
-  apiKey: "AIzaSyD1WjUHAR5v1EK8WPlvC_DpqnMj77tgYzU",
-  authDomain: "aforoya-f2e04.firebaseapp.com",
-  databaseURL: "https://aforoya-f2e04-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "aforoya-f2e04",
-  storageBucket: "aforoya-f2e04.firebasestorage.app",
-  messagingSenderId: "952335530782",
-  appId: "1:952335530782:web:12b2f72e91d468b580670f"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 // ── Firebase init ────────────────────────────────────────────
@@ -255,7 +255,7 @@ async function router() {
   if (local && tipo === 'entrada') return viewClienteEntrada(local);
   if (local && tipo === 'salida') return viewClienteSalida(local);
   if (local && view === 'portero') return viewPorteroPIN(local);
-  if (local && view === 'dueno') return viewDuenoAuth(local);
+  if (view === 'dueno') return viewDuenoAuth(local);
   if (cupon) return viewCupon(cupon);
   return viewHome();
 }
@@ -270,11 +270,11 @@ function viewHome() {
         <p class="logo-sub">Control de aforo en tiempo real</p>
       </div>
       <div class="home-cards">
-        <div class="home-card card-verde" onclick="location.href='?view=dueno&local=demo'">
+        <div class="home-card card-verde" onclick="location.href='?view=dueno'">
           <span class="hc-icon">🏠</span>
           <span class="hc-label">Soy el Dueño</span>
         </div>
-        <div class="home-card card-azul" onclick="location.href='?view=portero&local=demo'">
+        <div class="home-card card-azul" onclick="viewPorteroBuscar()">
           <span class="hc-icon">🚪</span>
           <span class="hc-label">Soy Portero</span>
         </div>
@@ -462,6 +462,36 @@ async function viewCupon(cuponToken) {
     </div>
   `);
 }
+
+window.viewPorteroBuscar = function() {
+  mount(`
+    <div class="pin-screen">
+      <div class="pin-logo">🚪</div>
+      <h2 class="pin-title">Acceso Portero</h2>
+      <div class="form-group" style="width:100%;max-width:280px">
+        <label>Nombre del local</label>
+        <input type="text" id="portero-nombre" class="inp" placeholder="Bar Paco" autocomplete="off">
+      </div>
+      <p class="pin-error" id="portero-error"></p>
+      <button class="btn btn-verde" style="width:100%;max-width:280px" onclick="porterosBuscarLocal()">Continuar</button>
+      <button class="btn btn-ghost" style="width:100%;max-width:280px" onclick="viewHome()">Volver</button>
+    </div>
+  `);
+};
+
+window.porterosBuscarLocal = async function() {
+  const nombre = document.getElementById('portero-nombre').value.trim().toLowerCase();
+  const errEl = document.getElementById('portero-error');
+  if (!nombre) { errEl.textContent = 'Introduce el nombre del local'; return; }
+  errEl.textContent = 'Buscando…';
+  try {
+    const snap = await db.ref('locales').once('value');
+    const locales = snap.val() || {};
+    const match = Object.entries(locales).find(([id, l]) => (l.nombre||'').toLowerCase() === nombre);
+    if (!match) { errEl.textContent = 'Local no encontrado. Comprueba el nombre.'; return; }
+    location.href = `?local=${encodeURIComponent(match[0])}&view=portero`;
+  } catch(e) { errEl.textContent = 'Error de conexión'; }
+};
 
 // ── PORTERO — PIN ────────────────────────────────────────────
 function viewPorteroPIN(localId) {
